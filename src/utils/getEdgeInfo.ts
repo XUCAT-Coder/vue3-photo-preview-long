@@ -1,4 +1,4 @@
-import { EdgeTypeEnum } from '../types';
+import { EdgeTypeEnum } from "../types";
 
 /**
  * 获取图片拖拽到边缘需要的值
@@ -9,15 +9,15 @@ export function getEdgeInfo({
   scale,
   rotate,
 }: {
-  width: number,
-  height: number,
-  scale: number,
-  rotate: number
+  width: number;
+  height: number;
+  scale: number;
+  rotate: number;
 }): {
-  edgeLeft: number,
-  edgeRight: number,
-  edgeTop: number,
-  edgeBottom: number,
+  edgeLeft: number;
+  edgeRight: number;
+  edgeTop: number;
+  edgeBottom: number;
 } {
   // 如果图片不是水平，则调换宽高
   const isVertical = rotate % 180 !== 0;
@@ -66,12 +66,12 @@ export function getEdgeTypes({
   x,
   y,
 }: {
-  width: number,
-  height: number,
-  scale: number,
-  rotate: number,
-  x: number,
-  y: number,
+  width: number;
+  height: number;
+  scale: number;
+  rotate: number;
+  x: number;
+  y: number;
 }): EdgeTypeEnum[] {
   const position = getEdgeInfo({ width, height, scale, rotate });
   const edgeTypes: EdgeTypeEnum[] = [];
@@ -103,18 +103,24 @@ export function getStandardPosition({
   x,
   y,
 }: {
-  width: number,
-  height: number,
-  scale: number,
-  rotate: number,
-  x: number,
-  y: number,
+  width: number;
+  height: number;
+  scale: number;
+  rotate: number;
+  x: number;
+  y: number;
 }): {
-  x: number,
-  y: number,
-  scale: number,
+  x: number;
+  y: number;
+  scale: number;
+  init_Y: number;
 } {
-  const { edgeLeft, edgeRight, edgeTop, edgeBottom } = getEdgeInfo({ width, height, scale, rotate });
+  const { edgeLeft, edgeRight, edgeTop, edgeBottom } = getEdgeInfo({
+    width,
+    height,
+    scale,
+    rotate,
+  });
 
   if (x > edgeLeft) {
     x = edgeLeft;
@@ -129,5 +135,5 @@ export function getStandardPosition({
     y = edgeBottom;
   }
 
-  return { x, y, scale };
+  return { x, y, scale, init_Y: edgeTop };
 }

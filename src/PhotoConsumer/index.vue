@@ -2,7 +2,7 @@
   <span
     v-if="$slots.default()"
     ref="root"
-    style="display:inline-block;"
+    style="display: inline-block"
     class="PhotoConsumer"
     @click="handleClick"
   >
@@ -11,13 +11,21 @@
   </span>
 </template>
 
-<script lang='ts'>
-import { defineComponent, inject, onMounted, onUnmounted, ref, watch, toRefs } from 'vue';
-import { updateItemKey, removeItemKey, handleShowKey } from '../symbols';
-import uniqueId from 'lodash-es/uniqueId';
+<script lang="ts">
+import {
+  defineComponent,
+  inject,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+  toRefs,
+} from "vue";
+import { updateItemKey, removeItemKey, handleShowKey } from "../symbols";
+import uniqueId from "lodash-es/uniqueId";
 
 export default defineComponent({
-  name: 'PhotoConsumer',
+  name: "ZaPhotoConsumer",
   props: {
     /**
      * 图片地址
@@ -31,15 +39,15 @@ export default defineComponent({
      */
     intro: {
       type: String,
-      default: null
+      default: null,
     },
     /**
      * 图片下载名称，默认图片名称
      */
     downloadName: {
       type: String,
-      default: null
-    }
+      default: null,
+    },
   },
   setup(props) {
     const updateItem = inject(updateItemKey);
@@ -57,7 +65,7 @@ export default defineComponent({
       src: src.value,
       originRef: root.value,
       intro: intro.value,
-      downloadName: downloadName.value
+      downloadName: downloadName.value,
     });
 
     watch([src, intro, downloadName], () => {
@@ -73,11 +81,10 @@ export default defineComponent({
 
     return {
       root,
-      handleClick
+      handleClick,
     };
   },
 });
 </script>
 
-<style lang="scss">
-</style>
+<style lang="scss"></style>

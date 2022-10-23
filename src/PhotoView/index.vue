@@ -1,54 +1,65 @@
 <template>
   <div
     v-if="loaded"
-    class="PhotoView__PhotoWrap"
+    class="Za_PhotoView__PhotoWrap"
     :style="{
       width: `${width}px`,
-      height: `${height}px`
+      height: `${height}px`,
     }"
   >
     <div
-      class="PhotoView__PhotoBox"
+      class="Za_PhotoView__PhotoBox"
       :class="{
-        'PhotoView__animateIn': showAnimateType === ShowAnimateEnum.In,
-        'PhotoView__animateOut': showAnimateType === ShowAnimateEnum.Out,
+        PhotoView__animateIn: showAnimateType === ShowAnimateEnum.In,
+        PhotoView__animateOut: showAnimateType === ShowAnimateEnum.Out,
       }"
       :style="{
         transformOrigin: getAnimateOrigin(originRect),
-        width: showAnimateType === ShowAnimateEnum.In || showAnimateType === ShowAnimateEnum.Out ? '0' : '100%'
+        width:
+          showAnimateType === ShowAnimateEnum.In ||
+          showAnimateType === ShowAnimateEnum.Out
+            ? '0'
+            : '100%',
       }"
     >
       <img
-        class="PhotoView__Photo"
+        class="Za_PhotoView__Photo"
         :src="src"
         :style="{
           width: `${width}px`,
           height: `${height}px`,
           transform: getTransform(),
-          transition: touched ? undefined : 'transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)',
+          transition: touched
+            ? undefined
+            : 'transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)',
         }"
         @mousedown.prevent="handleMouseDown"
         @touchstart.prevent="handleTouchStart"
         @wheel="handleWheel"
-      >
+      />
     </div>
   </div>
   <spinner v-else />
 </template>
 
-<script lang='ts'>
-import { defineComponent, PropType, toRefs } from 'vue';
-import Spinner from './Spinner.vue';
-import useLoadImage from './useLoadImage';
-import useWindowResize from './useWindowResize';
-import { OriginRectType, ShowAnimateEnum, TouchTypeEnum, EdgeTypeEnum } from '../types';
-import getAnimateOrigin from '../utils/getAnimateOrigin';
-import useMoveImage from './useMoveImage';
+<script lang="ts">
+import { defineComponent, PropType, toRefs } from "vue";
+import Spinner from "./Spinner.vue";
+import useLoadImage from "./useLoadImage";
+import useWindowResize from "./useWindowResize";
+import {
+  OriginRectType,
+  ShowAnimateEnum,
+  TouchTypeEnum,
+  EdgeTypeEnum,
+} from "../types";
+import getAnimateOrigin from "../utils/getAnimateOrigin";
+import useMoveImage from "./useMoveImage";
 
 export default defineComponent({
-  name: 'PhotoView',
+  name: "ZaPhotoView",
   components: {
-    Spinner
+    Spinner,
   },
   props: {
     /**
@@ -71,32 +82,68 @@ export default defineComponent({
     showAnimateType: {
       type: Number as PropType<ShowAnimateEnum>,
       default: null,
-    }
+    },
   },
-  emits: ['touchStart', 'touchMove', 'touchEnd', 'singleTap'],
+  emits: ["touchStart", "touchMove", "touchEnd", "singleTap"],
   setup(props, { emit }) {
     const { src } = toRefs(props);
-    const { width, height, loaded, naturalWidth, naturalHeight, setSuitableImageSize } = useLoadImage(src);
-
+    const {
+      width,
+      height,
+      loaded,
+      naturalWidth,
+      naturalHeight,
+      setSuitableImageSize,
+    } = useLoadImage(src);
     const onTouchStart = (clientX: number, clientY: number) => {
-      emit('touchStart', clientX, clientY);
+      emit("touchStart", clientX, clientY);
     };
-    const onTouchMove = (touchType: TouchTypeEnum, clientX: number, clientY: number, edgeTypes: EdgeTypeEnum[]) => {
-      emit('touchMove', touchType, clientX, clientY, edgeTypes);
+    const onTouchMove = (
+      touchType: TouchTypeEnum,
+      clientX: number,
+      clientY: number,
+      edgeTypes: EdgeTypeEnum[]
+    ) => {
+      emit("touchMove", touchType, clientX, clientY, edgeTypes);
     };
-    const onTouchEnd = (touchType: TouchTypeEnum, clientX: number, clientY: number, edgeTypes: EdgeTypeEnum[]) => {
-      emit('touchEnd', touchType, clientX, clientY, edgeTypes);
+    const onTouchEnd = (
+      touchType: TouchTypeEnum,
+      clientX: number,
+      clientY: number,
+      edgeTypes: EdgeTypeEnum[]
+    ) => {
+      emit("touchEnd", touchType, clientX, clientY, edgeTypes);
     };
-    const onSingleTap = (clientX: number, clientY: number, e: MouseEvent | TouchEvent) => {
-      emit('singleTap', clientX, clientY, e);
+    const onSingleTap = (
+      clientX: number,
+      clientY: number,
+      e: MouseEvent | TouchEvent
+    ) => {
+      emit("singleTap", clientX, clientY, e);
     };
 
     const {
-      x, y, scale, rotate, touched,
-      handleMouseDown, handleTouchStart, handleWheel, handleRotateLeft, handleRotateRight
+      x,
+      y,
+      scale,
+      rotate,
+      touched,
+      handleMouseDown,
+      handleTouchStart,
+      handleWheel,
+      handleRotateLeft,
+      handleRotateRight,
     } = useMoveImage(
-      width, height, naturalWidth, naturalHeight,
-      setSuitableImageSize, onTouchStart, onTouchMove, onTouchEnd, onSingleTap,
+      width,
+      height,
+      naturalWidth,
+      naturalHeight,
+      setSuitableImageSize,
+      onTouchStart,
+      onTouchMove,
+      onTouchEnd,
+      onSingleTap,
+      src.value
     );
 
     useWindowResize(naturalWidth, naturalHeight, rotate, setSuitableImageSize);
@@ -114,7 +161,7 @@ export default defineComponent({
       handleWheel,
       rotate,
       handleRotateLeft,
-      handleRotateRight
+      handleRotateRight,
     };
   },
   data() {
@@ -134,8 +181,8 @@ export default defineComponent({
       this.isFlipVertical = !this.isFlipVertical;
     },
     getTransform() {
-      const scaleX = `${this.isFlipHorizontal ? '-' : ''}${this.scale}`;
-      const scaleY = `${this.isFlipVertical ? '-' : ''}${this.scale}`;
+      const scaleX = `${this.isFlipHorizontal ? "-" : ""}${this.scale}`;
+      const scaleY = `${this.isFlipVertical ? "-" : ""}${this.scale}`;
       const transform: Record<string, string> = {
         matrix: `${scaleX}, 0, 0, ${scaleY}, ${this.x}, ${this.y}`,
       };
@@ -143,14 +190,14 @@ export default defineComponent({
         transform.rotate = `${this.rotate}deg`;
       }
 
-      let str = '';
-      Object.keys(transform).forEach(name => {
+      let str = "";
+      Object.keys(transform).forEach((name) => {
         str += `${name}(${transform[name]})`;
       });
 
       return str;
-    }
-  }
+    },
+  },
 });
 </script>
 
@@ -177,12 +224,12 @@ export default defineComponent({
   }
 }
 
-.PhotoView__PhotoWrap {
+.Za_PhotoView__PhotoWrap {
   display: flex;
   justify-content: center;
   align-items: center;
 
-  .PhotoView__PhotoBox {
+  .Za_PhotoView__PhotoBox {
     width: 0;
     height: 0;
     display: flex;
@@ -196,10 +243,11 @@ export default defineComponent({
 
     &.PhotoView__animateOut {
       opacity: 1;
-      animation: PhotoView__animateOut 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) both;
+      animation: PhotoView__animateOut 0.4s cubic-bezier(0.25, 0.8, 0.25, 1)
+        both;
     }
 
-    .PhotoView__Photo {
+    .Za_PhotoView__Photo {
       touch-action: none;
       cursor: grab;
       display: block;

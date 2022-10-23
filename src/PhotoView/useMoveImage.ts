@@ -1,12 +1,17 @@
-import { Ref, ref } from 'vue';
-import isTouchDevice from '../utils/isTouchDevice';
-import throttle from 'lodash-es/throttle';
-import { TouchTypeEnum, EdgeTypeEnum } from '../types';
-import { minStartTouchOffset, maxScale } from '../constant';
-import withContinuousTap from '../utils/withContinuousTap';
-import getPositionOnMoveOrScale from '../utils/getPositionOnMoveOrScale';
-import { getStandardPosition, getEdgeTypes } from '../utils/getEdgeInfo';
-import getMultipleTouchPosition from '../utils/getMultipleTouchPosition';
+import { Ref, ref } from "vue";
+import isTouchDevice from "../utils/isTouchDevice";
+import throttle from "lodash-es/throttle";
+import { TouchTypeEnum, EdgeTypeEnum } from "../types";
+import { minStartTouchOffset, maxScale } from "../constant";
+import withContinuousTap from "../utils/withContinuousTap";
+import getPositionOnMoveOrScale from "../utils/getPositionOnMoveOrScale";
+import {
+  getStandardPosition,
+  getEdgeTypes,
+  getEdgeInfo,
+} from "../utils/getEdgeInfo";
+import getMultipleTouchPosition from "../utils/getMultipleTouchPosition";
+import getSuitableImageSize from "../utils/getSuitableImageSize";
 
 type useMoveImageReturn = {
   x: Ref<number>;
@@ -19,25 +24,60 @@ type useMoveImageReturn = {
   handleWheel: (e: WheelEvent) => void;
   handleRotateLeft: () => void;
   handleRotateRight: () => void;
-}
+};
 
 export default function useMoveImage(
   width: Ref<number>,
   height: Ref<number>,
   naturalWidth: Ref<number>,
   naturalHeight: Ref<number>,
-  setSuitableImageSize: (actualWidth: number, actualHeight: number, rotate: number) => void,
+  setSuitableImageSize: (
+    actualWidth: number,
+    actualHeight: number,
+    rotate: number
+  ) => void,
   onTouchStart: (clientX: number, clientY: number) => void,
-  onTouchMove: (touchType: TouchTypeEnum, clientX: number, clientY: number, edgeTypes: EdgeTypeEnum[]) => void,
-  onTouchEnd: (touchType: TouchTypeEnum, clientX: number, clientY: number, edgeTypes: EdgeTypeEnum[]) => void,
-  onSingleTap: (clientX: number, clientY: number, e: MouseEvent | TouchEvent) => void,
+  onTouchMove: (
+    touchType: TouchTypeEnum,
+    clientX: number,
+    clientY: number,
+    edgeTypes: EdgeTypeEnum[]
+  ) => void,
+  onTouchEnd: (
+    touchType: TouchTypeEnum,
+    clientX: number,
+    clientY: number,
+    edgeTypes: EdgeTypeEnum[]
+  ) => void,
+  onSingleTap: (
+    clientX: number,
+    clientY: number,
+    e: MouseEvent | TouchEvent
+  ) => void,
+  src: string
 ): useMoveImageReturn {
+  const { innerWidth } = window;
+  const img = new Image();
   // 图片 x 偏移量
   const x = ref(0);
   // 图片 y 偏移量
   const y = ref(0);
   // 图片缩放程度
   const scale = ref(1);
+
+  img.onload = () => {
+    const res = getSuitableImageSize(img.width, img.height, 0);
+    scale.value = innerWidth / res.width;
+    const { edgeTop } = getEdgeInfo({
+      width: width.value,
+      height: height.value,
+      scale: scale.value,
+      rotate: 0,
+    });
+    y.value = edgeTop;
+    lastY.value = edgeTop;
+  };
+  img.src = src;
   // 图片旋转角度
   const rotate = ref(0);
   // 图片是否处于触摸状态
@@ -62,8 +102,8 @@ export default function useMoveImage(
 
     handleDown(e.clientX, e.clientY, 0);
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
   };
 
   const handleTouchStart = (e: TouchEvent) => {
@@ -72,11 +112,15 @@ export default function useMoveImage(
     const touch = getMultipleTouchPosition(e);
     handleDown(touch.clientX, touch.clientY, touch.touchLength);
 
-    window.addEventListener('touchmove', handleTouchMove);
-    window.addEventListener('touchend', handleTouchEnd);
+    window.addEventListener("touchmove", handleTouchMove);
+    window.addEventListener("touchend", handleTouchEnd);
   };
 
-  const handleDown = (newClientX: number, newClientY: number, touchLength: number) => {
+  const handleDown = (
+    newClientX: number,
+    newClientY: number,
+    touchLength: number
+  ) => {
     touched.value = true;
     clientX.value = newClientX;
     clientY.value = newClientY;
@@ -87,7 +131,7 @@ export default function useMoveImage(
       scale: scale.value,
       rotate: rotate.value,
       x: lastX.value,
-      y: lastY.value
+      y: lastY.value,
     });
 
     onTouchStart(newClientX, newClientY);
@@ -106,56 +150,70 @@ export default function useMoveImage(
     handleMove(touch.clientX, touch.clientY, touch.touchLength);
   };
 
-  const handleMove = throttle((newClientX: number, newClientY: number, touchLength: number) => {
-    // 初始化触摸状态
-    if (touchType.value === TouchTypeEnum.Normal) {
-      if (scale.value !== 1 || touchLength) {
-        touchType.value = TouchTypeEnum.Scale;
-      } else {
-        const isMoveX = Math.abs(newClientX - clientX.value) > minStartTouchOffset;
-        const isMoveY = Math.abs(newClientY - clientY.value) > minStartTouchOffset;
+  const handleMove = throttle(
+    (newClientX: number, newClientY: number, touchLength: number) => {
+      // 初始化触摸状态
+      if (touchType.value === TouchTypeEnum.Normal) {
+        if (scale.value !== 1 || touchLength) {
+          touchType.value = TouchTypeEnum.Scale;
+        } else {
+          const isMoveX =
+            Math.abs(newClientX - clientX.value) > minStartTouchOffset;
+          const isMoveY =
+            Math.abs(newClientY - clientY.value) > minStartTouchOffset;
 
-        if (!isMoveX && !isMoveY) return;
+          if (!isMoveX && !isMoveY) return;
 
-        // 水平方向优先
-        touchType.value = isMoveX ? TouchTypeEnum.X : TouchTypeEnum.Y;
-      }
-    }
-
-    onTouchMove(touchType.value, newClientX, newClientY, edgeTypes);
-
-    const newX = newClientX - clientX.value;
-    const newY = newClientY - clientY.value;
-    if (touchType.value === TouchTypeEnum.Y) {
-      x.value = newX + lastX.value;
-      y.value = newY + lastY.value;
-    }
-    if (touchType.value === TouchTypeEnum.Scale) {
-      if (touchLength) {
-        const endScale = scale.value + ((touchLength - lastTouchLength.value) / 100 / 2) * scale.value;
-        const toScale = Math.max(Math.min(endScale, Math.max(maxScale, naturalWidth.value / width.value)), 1);
-        handleToScale(toScale, newClientX, newClientY);
-        lastTouchLength.value = touchLength;
-      } else {
-        // 处于左边缘情况，右划交给父级处理，处于右边缘情况，左划交给父级处理
-        if (
-          !(newX > 0 && edgeTypes.includes(EdgeTypeEnum.Left)) &&
-          !(newX < 0 && edgeTypes.includes(EdgeTypeEnum.Right))
-        ) {
-          x.value = newX + lastX.value;
+          // 水平方向优先
+          touchType.value = isMoveX ? TouchTypeEnum.X : TouchTypeEnum.Y;
         }
+      }
+
+      onTouchMove(touchType.value, newClientX, newClientY, edgeTypes);
+
+      const newX = newClientX - clientX.value;
+      const newY = newClientY - clientY.value;
+      if (touchType.value === TouchTypeEnum.Y) {
+        x.value = newX + lastX.value;
         y.value = newY + lastY.value;
       }
-    }
-  }, 8, { trailing: false });
+      if (touchType.value === TouchTypeEnum.Scale) {
+        if (touchLength) {
+          const endScale =
+            scale.value +
+            ((touchLength - lastTouchLength.value) / 100 / 2) * scale.value;
+          const toScale = Math.max(
+            Math.min(
+              endScale,
+              Math.max(maxScale, naturalWidth.value / width.value)
+            ),
+            1
+          );
+          handleToScale(toScale, newClientX, newClientY);
+          lastTouchLength.value = touchLength;
+        } else {
+          // 处于左边缘情况，右划交给父级处理，处于右边缘情况，左划交给父级处理
+          if (
+            !(newX > 0 && edgeTypes.includes(EdgeTypeEnum.Left)) &&
+            !(newX < 0 && edgeTypes.includes(EdgeTypeEnum.Right))
+          ) {
+            x.value = newX + lastX.value;
+          }
+          y.value = newY + lastY.value;
+        }
+      }
+    },
+    8,
+    { trailing: false }
+  );
 
   const handleMouseUp = (e: MouseEvent) => {
     if (isTouchDevice) return;
 
     handleUp(e.clientX, e.clientY, e);
 
-    window.removeEventListener('mousemove', handleMouseMove);
-    window.removeEventListener('mouseup', handleMouseUp);
+    window.removeEventListener("mousemove", handleMouseMove);
+    window.removeEventListener("mouseup", handleMouseUp);
   };
 
   const handleTouchEnd = (e: TouchEvent) => {
@@ -164,8 +222,8 @@ export default function useMoveImage(
     const touch = e.changedTouches[0];
     handleUp(touch.clientX, touch.clientY, e);
 
-    window.removeEventListener('touchmove', handleTouchMove);
-    window.removeEventListener('touchend', handleTouchEnd);
+    window.removeEventListener("touchmove", handleTouchMove);
+    window.removeEventListener("touchend", handleTouchEnd);
   };
 
   const onDoubleTap = (newClientX: number, newClientY: number) => {
@@ -194,7 +252,11 @@ export default function useMoveImage(
 
   const onTap = withContinuousTap(onSingleTap, onDoubleTap);
 
-  const handleUp = (newClientX: number, newClientY: number, e: TouchEvent | MouseEvent) => {
+  const handleUp = (
+    newClientX: number,
+    newClientY: number,
+    e: TouchEvent | MouseEvent
+  ) => {
     if (clientX.value === newClientX && clientY.value === newClientY) {
       onTap(newClientX, newClientY, e);
     }
@@ -213,7 +275,7 @@ export default function useMoveImage(
         scale: scale.value,
         rotate: rotate.value,
         x: x.value,
-        y: y.value
+        y: y.value,
       });
     }
 
@@ -227,11 +289,18 @@ export default function useMoveImage(
 
   const handleWheel = (e: WheelEvent) => {
     const endScale = scale.value - e.deltaY / 100 / 2;
-    const toScale = Math.max(Math.min(endScale, Math.max(maxScale, naturalWidth.value / width.value)), 1);
+    const toScale = Math.max(
+      Math.min(endScale, Math.max(maxScale, naturalWidth.value / width.value)),
+      1
+    );
     handleToScale(toScale, e.clientX, e.clientY);
   };
 
-  const handleToScale = (newScale: number, newClientX: number, newClientY: number) => {
+  const handleToScale = (
+    newScale: number,
+    newClientX: number,
+    newClientY: number
+  ) => {
     const position = getPositionOnMoveOrScale({
       x: x.value,
       y: y.value,
@@ -247,14 +316,20 @@ export default function useMoveImage(
       scale: position.scale,
       rotate: rotate.value,
       x: position.x,
-      y: position.y
+      y: position.y,
     });
   };
 
   const setStandardPosition = (position: {
-    width: number; height: number; scale: number; rotate: number; x: number, y: number
+    width: number;
+    height: number;
+    scale: number;
+    rotate: number;
+    x: number;
+    y: number;
   }) => {
     const standardPosition = getStandardPosition(position);
+
     x.value = standardPosition.x;
     y.value = standardPosition.y;
     lastX.value = standardPosition.x;
@@ -265,29 +340,30 @@ export default function useMoveImage(
   const handleRotateLeft = () => {
     rotate.value = rotate.value - 90;
     setSuitableImageSize(naturalWidth.value, naturalHeight.value, rotate.value);
+
     setStandardPosition({
       width: width.value,
       height: height.value,
       scale: scale.value,
       rotate: rotate.value,
       x: x.value,
-      y: y.value
+      y: y.value,
     });
   };
 
   const handleRotateRight = () => {
     rotate.value = rotate.value + 90;
     setSuitableImageSize(naturalWidth.value, naturalHeight.value, rotate.value);
+
     setStandardPosition({
       width: width.value,
       height: height.value,
       scale: scale.value,
       rotate: rotate.value,
       x: x.value,
-      y: y.value
+      y: y.value,
     });
   };
-
   return {
     x,
     y,
@@ -298,6 +374,6 @@ export default function useMoveImage(
     handleWheel,
     rotate,
     handleRotateLeft,
-    handleRotateRight
+    handleRotateRight,
   };
 }

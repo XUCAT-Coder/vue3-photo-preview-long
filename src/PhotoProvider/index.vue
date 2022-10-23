@@ -16,18 +16,18 @@
   />
 </template>
 
-<script lang='ts'>
-import { defineComponent, provide } from 'vue';
-import { updateItemKey, removeItemKey, handleShowKey } from '../symbols';
-import useItems from './useItems';
-import useVisible from './useVisible';
-import useIndex from './useIndex';
-import PhotoSlider from '../PhotoSlider/index.vue';
+<script lang="ts">
+import { defineComponent, provide } from "vue";
+import { updateItemKey, removeItemKey, handleShowKey } from "../symbols";
+import useItems from "./useItems";
+import useVisible from "./useVisible";
+import useIndex from "./useIndex";
+import PhotoSlider from "../PhotoSlider/index.vue";
 
 export default defineComponent({
-  name: 'PhotoProvider',
+  name: "ZaPhotoProvider",
   components: {
-    PhotoSlider
+    PhotoSlider,
   },
   props: {
     /**
@@ -64,19 +64,23 @@ export default defineComponent({
     loop: {
       type: Boolean,
       default: false,
-    }
+    },
   },
-  emits: ['indexChange', 'visibleChange'],
+  emits: ["indexChange", "visibleChange"],
   setup(_props, { emit }) {
     const onIndexChange = () => {
-      emit('indexChange', { index, items, visible });
+      emit("indexChange", { index, items, visible });
     };
     const onVisibleChange = () => {
-      emit('visibleChange', { index, items, visible });
+      emit("visibleChange", { index, items, visible });
     };
     const { index, updateIndex } = useIndex(onIndexChange);
     const { items, updateItem, removeItem } = useItems(index);
-    const { visible, handleHide, handleShow } = useVisible(items, index, onVisibleChange);
+    const { visible, handleHide, handleShow } = useVisible(
+      items,
+      index,
+      onVisibleChange
+    );
 
     provide(updateItemKey, updateItem);
     provide(removeItemKey, removeItem);
@@ -103,10 +107,9 @@ export default defineComponent({
       if (this.maskClosable) {
         this.handleHide();
       }
-    }
-  }
+    },
+  },
 });
 </script>
 
-<style lang="scss">
-</style>
+<style lang="scss"></style>
